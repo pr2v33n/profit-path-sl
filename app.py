@@ -1,156 +1,145 @@
 import streamlit as st
 import math
 import urllib.parse
+import pandas as pd
 
-# 1. Page Configuration
-st.set_page_config(
-    page_title="ProfitPath SL Pro", 
-    page_icon="💰", 
-    layout="centered"
-)
+# 1. Page Config
+st.set_page_config(page_title="ProfitPath SL Pro", page_icon="💰", layout="centered")
 
-# 2. Complete Language Dictionary
+# 2. Language Data
 strings = {
     "English": {
         "title": "💰 ProfitPath SL Pro",
         "subtitle": "Professional Pricing for Sri Lankan Entrepreneurs",
+        "calc_header": "Ingredient List (Edit or Delete rows below)",
+        "add_item": "Add to List",
+        "item_name": "Item Name",
+        "item_price": "Price (Rs.)",
         "prod_name": "Product Name",
         "batch": "Total units in this batch",
-        "ing_cost": "Cost of ingredients (Rs.)",
         "pkg_cost": "Packaging per unit (Rs.)",
         "margin": "Desired Profit %",
         "waste": "Wastage Allowance (%)",
-        "comp": "Competitor Price (Rs.)",
         "result_retail": "Suggested Selling Price",
         "result_profit": "Profit per Unit",
-        "theme_label": "Dark Mode",
-        "share": "Share Breakdown via WhatsApp",
+        "share": "Share via WhatsApp",
         "msg": "Pricing for {name}: *Retail Rs. {price}*. Cost Rs. {cost}. Profit Rs. {prof}."
     },
     "සිංහල": {
         "title": "💰 ProfitPath SL Pro",
         "subtitle": "ශ්‍රී ලංකාවේ ව්‍යවසායකයින් සඳහා වෘත්තීය මිල ගණනය කිරීම්",
+        "calc_header": "අමුද්‍රව්‍ය ලැයිස්තුව (පේළි සංස්කරණය කරන්න හෝ මකන්න)",
+        "add_item": "එක් කරන්න",
+        "item_name": "අයිතමය",
+        "item_price": "මිල (රු.)",
         "prod_name": "නිෂ්පාදනයේ නම",
         "batch": "මුළු ඒකක ගණන",
-        "ing_cost": "අමුද්‍රව්‍ය පිරිවැය (රු.)",
         "pkg_cost": "ඇසුරුම් පිරිවැය (රු.)",
         "margin": "බලාපොරොත්තු වන ලාභ %",
         "waste": "අපතේ යාමේ ප්‍රතිශතය (%)",
-        "comp": "තරඟකාරී මිල (රු.)",
         "result_retail": "විකුණුම් මිල",
         "result_profit": "ඒකකයක ලාභය",
-        "theme_label": "අඳුරු ප්‍රකාරය",
-        "share": "WhatsApp මගින් විස්තර යවන්න",
+        "share": "WhatsApp මගින් යවන්න",
         "msg": "{name} සඳහා මිල: *විකුණුම් මිල රු. {price}*. පිරිවැය රු. {cost}. ලාභය රු. {prof}."
     },
     "தமிழ்": {
         "title": "💰 ProfitPath SL Pro",
         "subtitle": "இலங்கை தொழில்முயற்சியாளர்களுக்கான தொழில்முறை விலை நிர்ணயம்",
+        "calc_header": "மூலப்பொருள் பட்டியல் (வரிசைகளை மாற்றவும் அல்லது நீக்கவும்)",
+        "add_item": "சேர்க்கவும்",
+        "item_name": "பொருள்",
+        "item_price": "விலை (ரூ.)",
         "prod_name": "பொருளின் பெயர்",
         "batch": "மொத்த அலகுகள்",
-        "ing_cost": "தேவையான பொருட்களின் விலை (ரூ.)",
         "pkg_cost": "பேக்கேஜிங் விலை (ரூ.)",
         "margin": "எதிர்பார்த்தும் லாபம் %",
         "waste": "வீணடிப்பு சதவீதம் (%)",
-        "comp": "போட்டியாளர் விலை (ரூ.)",
         "result_retail": "விற்பனை விலை",
         "result_profit": "ஒரு அலகின் லாபம்",
-        "theme_label": "டார்க் மோட்",
         "share": "WhatsApp மூலம் பகிரவும்",
         "msg": "{name} க்கான விலை: *விற்பனை விலை ரூ. {price}*. செலவு ரூ. {cost}. லாபம் ரூ. {prof}."
     }
 }
 
-# 3. Top Row: Language and Theme Selection
-col_l, col_t = st.columns([2, 1])
+# 3. Language & Theme Selection (With Icon)
+col_l, col_t = st.columns([3, 1])
 with col_l:
     lang_choice = st.selectbox("Language / භාෂාව / மொழி", ["English", "සිංහල", "தமிழ்"])
     s = strings[lang_choice]
 with col_t:
-    dark_mode = st.toggle(s["theme_label"], value=False)
+    # Using an icon instead of text for the toggle
+    dark_mode = st.toggle("🌙" if st.session_state.get('dark', False) else "☀️", value=False, key='dark')
 
-# 4. Universal High-Contrast Theme Engine
-if dark_mode:
-    bg_color = "#0E1117"
-    txt_color = "#FFFFFF"
-    input_bg = "#262730"
-    metric_val = "#00FFAA" # Neon green for dark mode visibility
-else:
-    bg_color = "#FFFFFF"
-    txt_color = "#121212" # Solid black for sunlight visibility
-    input_bg = "#F0F2F6"
-    metric_val = "#1D3557" # Deep blue for light mode visibility
+# 4. Final Theme Logic (Forcing Contrast)
+bg, txt, input_bg, met = ("#0E1117", "#FFFFFF", "#262730", "#00FFAA") if dark_mode else ("#FFFFFF", "#121212", "#F0F2F6", "#1D3557")
 
 st.markdown(f"""
     <style>
-    .stApp {{ background-color: {bg_color} !important; color: {txt_color} !important; }}
-    h1, h2, h3, p, span, label, .stMetric label {{ color: {txt_color} !important; }}
-    [data-testid="stMetricValue"] {{ color: {metric_val} !important; font-weight: bold !important; }}
-    .stTextInput input, .stNumberInput input {{ background-color: {input_bg} !important; color: {txt_color} !important; border: 1px solid {txt_color}22 !important; }}
-    hr {{ border-color: {txt_color}44 !important; }}
-    </style>
-    """, unsafe_allow_html=True)
+    /* Force every possible text container to inherit the correct color */
+    .stApp, div, span, label, p, h1, h2, h3 {{ background-color: {bg} !important; color: {txt} !important; }}
+    [data-testid="stMetricValue"] {{ color: {met} !important; font-weight: 800 !important; font-size: 2.5rem !important; }}
+    .stMetric label {{ color: {txt} !important; opacity: 0.8; }}
+    input {{ background-color: {input_bg} !important; color: {txt} !important; border: 1px solid {txt}33 !important; }}
+    /* Styling the data editor */
+    div[data-testid="stTable"] {{ background-color: {input_bg}; }}
+    </style>""", unsafe_allow_html=True)
 
-# 5. Application UI
 st.title(s["title"])
-st.write(s["subtitle"])
+st.caption(s["subtitle"])
 st.divider()
 
-# Main Inputs
-prod_name = st.text_input(s["prod_name"], value="Yethu Product #1")
+# 5. Dynamic Data Editor (The "Delete/Modify" solution)
+st.subheader(s["calc_header"])
 
-col1, col2 = st.columns(2)
-with col1:
+if 'ing_df' not in st.session_state:
+    st.session_state.ing_df = pd.DataFrame(columns=[s["item_name"], s["item_price"]])
+
+# A simple form to add new rows quickly
+with st.form("quick_add", clear_on_submit=True):
+    ca, cb, cc = st.columns([2, 2, 1])
+    new_item = ca.text_input(s["item_name"], key="new_item_name")
+    new_price = cb.number_input(s["item_price"], min_value=0.0, key="new_item_price")
+    add_btn = cc.form_submit_button(s["add_item"])
+    if add_btn and new_item:
+        new_row = pd.DataFrame({s["item_name"]: [new_item], s["item_price"]: [new_price]})
+        st.session_state.ing_df = pd.concat([st.session_state.ing_df, new_row], ignore_index=True)
+
+# The Data Editor: Users can click a cell to modify or select a row and hit "Delete" on their keyboard
+edited_df = st.data_editor(
+    st.session_state.ing_df, 
+    num_rows="dynamic", # This enables the "Add" and "Delete" icons in the table
+    use_container_width=True,
+    key="ing_editor"
+)
+st.session_state.ing_df = edited_df # Sync the changes
+
+total_ing_cost = edited_df[s["item_price"]].sum()
+st.info(f"Total Ingredients: Rs. {total_ing_cost:,.2f}")
+
+# 6. Production Inputs
+st.divider()
+prod_name = st.text_input(s["prod_name"], value="Yethu Product")
+c1, c2 = st.columns(2)
+with c1:
     batch = st.number_input(s["batch"], min_value=1, value=10)
-    ing_cost = st.number_input(s["ing_cost"], min_value=0.0, value=1000.0)
-with col2:
-    pkg_cost = st.number_input(s["pkg_cost"], min_value=0.0, value=50.0)
+    pkg = st.number_input(s["pkg_cost"], min_value=0.0, value=45.0)
+with c2:
     margin = st.number_input(s["margin"], min_value=1, max_value=99, value=30)
+    wastage = st.number_input(s["waste"], min_value=0, value=5)
 
-# Advanced Settings (Wastage & Competitor)
-with st.expander("Advanced Business Tools / උසස් මෙවලම්"):
-    c_adv1, c_adv2 = st.columns(2)
-    with c_adv1:
-        wastage = st.number_input(s["waste"], min_value=0, max_value=50, value=5)
-    with c_adv2:
-        comp_price = st.number_input(s["comp"], min_value=0, value=0)
-
-# 6. Core Logic
-adjusted_ing_cost = ing_cost * (1 + (wastage/100))
-total_batch_cost = adjusted_ing_cost + (pkg_cost * batch)
-cost_per_unit = total_batch_cost / batch
-
-# Margin Formula: Price = Cost / (1 - Margin%)
+# 7. Final Calculations
+adj_ing_cost = total_ing_cost * (1 + (wastage/100))
+cost_per_unit = (adj_ing_cost + (pkg * batch)) / batch
 retail_price = math.ceil(cost_per_unit / (1 - (margin/100)))
 profit_per_unit = retail_price - cost_per_unit
 
-# 7. Final Results Display
+# 8. High-Impact Results
 st.divider()
-res1, res2 = st.columns(2)
-res1.metric(s["result_retail"], f"Rs. {retail_price}")
-res2.metric(s["result_profit"], f"Rs. {math.floor(profit_per_unit)}")
+r1, r2 = st.columns(2)
+r1.metric(s["result_retail"], f"Rs. {retail_price:,}")
+r2.metric(s["result_profit"], f"Rs. {math.floor(profit_per_unit):,}")
 
-# Market Feedback
-if comp_price > 0:
-    diff = retail_price - comp_price
-    if diff > 0:
-        st.warning(f"⚠️ Price is Rs. {diff} higher than competitor.")
-    else:
-        st.success(f"✅ Your price is Rs. {abs(diff)} cheaper! Competitive.")
-
-st.divider()
-
-# 8. WhatsApp Integration
-msg_body = s["msg"].format(name=prod_name, price=retail_price, cost=round(cost_per_unit, 2), prof=round(profit_per_unit, 2))
-whatsapp_url = f"https://wa.me/?text={urllib.parse.quote(msg_body)}"
-
-st.markdown(f'''
-    <a href="{whatsapp_url}" target="_blank" style="text-decoration: none;">
-        <div style="background-color:#25D366; color:white; padding:15px; text-align:center; border-radius:10px; font-weight:bold; cursor:pointer;">
-            {s["share"]}
-        </div>
-    </a>
-    ''', unsafe_allow_html=True)
-
-st.markdown("<br>", unsafe_allow_html=True)
-st.caption("© 2026 ProfitPath SL | Optimized for ables.app")
+# WhatsApp Sharing
+msg = s["msg"].format(name=prod_name, price=retail_price, cost=round(cost_per_unit, 2), prof=round(profit_per_unit, 2))
+wa_url = f"https://wa.me/?text={urllib.parse.quote(msg)}"
+st.markdown(f'<a href="{wa_url}" target="_blank" style="text-decoration:none;"><div style="background:#25D366;color:white;padding:15px;text-align:center;border-radius:12px;font-weight:bold;font-size:1.1rem;">{s["share"]}</div></a>', unsafe_allow_html=True)
