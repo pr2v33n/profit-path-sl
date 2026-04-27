@@ -1,10 +1,10 @@
 import streamlit as st
 import math
 
-# 1. Page Configuration & Theme State
+# 1. Page Config
 st.set_page_config(page_title="ProfitPath SL", layout="centered")
 
-# Language Dictionary
+# 2. Language Data
 strings = {
     "English": {
         "title": "💰 ProfitPath SL",
@@ -16,8 +16,7 @@ strings = {
         "margin": "Desired Profit %",
         "result_retail": "Selling Price",
         "result_profit": "Profit per unit",
-        "theme": "Dark Mode",
-        "lang": "Language"
+        "theme_label": "Dark Mode"
     },
     "සිංහල": {
         "title": "💰 ProfitPath SL",
@@ -29,8 +28,7 @@ strings = {
         "margin": "බලාපොරොත්තු වන ලාභ %",
         "result_retail": "විකුණුම් මිල",
         "result_profit": "ඒකකයක ලාභය",
-        "theme": "අඳුරු ප්‍රකාරය (Dark Mode)",
-        "lang": "භාෂාව"
+        "theme_label": "අඳුරු ප්‍රකාරය"
     },
     "தமிழ்": {
         "title": "💰 ProfitPath SL",
@@ -39,34 +37,59 @@ strings = {
         "batch": "மொத்த அலகுகள்",
         "ing_cost": "தேவையான பொருட்களின் விலை (ரூ.)",
         "pkg_cost": "பேக்கேஜிங் விலை (ரூ.)",
-        "margin": "எதிர்பார்க்கும் லாபம் %",
+        "margin": "எதிர்பார்த்தும் லாபம் %",
         "result_retail": "விற்பனை விலை",
         "result_profit": "ஒரு அலகின் லாபம்",
-        "theme": "டார்க் மோட்",
-        "lang": "மொழி"
+        "theme_label": "டார்க் மோட்"
     }
 }
 
-# 2. UI Controls (Top Row)
+# 3. Theme State Logic
 col_l, col_t = st.columns([2, 1])
 with col_l:
-    lang = st.selectbox("", ["English", "සිංහල", "தமிழ்"])
+    lang_choice = st.selectbox("Language / භාෂාව / மொழி", ["English", "සිංහල", "தமிழ்"])
+    s = strings[lang_choice]
 with col_t:
-    dark_mode = st.toggle(strings[lang]["theme"])
+    dark_mode = st.toggle(s["theme_label"], value=False)
 
-# Apply Theme via CSS
+# 4. The "Invisible Text" Fix (Universal CSS)
 if dark_mode:
-    st.markdown("""<style>stApp {background-color: #121212; color: white;}</style>""", unsafe_allow_html=True)
+    bg_color = "#0E1117"
+    txt_color = "#FFFFFF"
+    input_bg = "#262730"
+else:
+    bg_color = "#FFFFFF"
+    txt_color = "#121212" # Strong dark black for high contrast
+    input_bg = "#F0F2F6"
 
-s = strings[lang]
+st.markdown(f"""
+    <style>
+    /* Global Background */
+    .stApp {{
+        background-color: {bg_color} !important;
+    }}
+    /* Target ALL text elements: headers, paragraphs, labels, and metrics */
+    h1, h2, h3, p, span, label, .stMetric label, [data-testid="stMetricValue"] {{
+        color: {txt_color} !important;
+    }}
+    /* Ensure input boxes are readable */
+    .stTextInput input, .stNumberInput input {{
+        background-color: {input_bg} !important;
+        color: {txt_color} !important;
+    }}
+    /* Divider color adjust */
+    hr {{
+        border-color: {txt_color}55 !important;
+    }}
+    </style>
+    """, unsafe_allow_html=True)
 
-# 3. Main Interface
+# 5. Application Interface
 st.title(s["title"])
 st.write(s["subtitle"])
 st.divider()
 
-# Input Section (No Hidden Sliders)
-name = st.text_input(s["prod_name"], value="Yethu Achcharu")
+name = st.text_input(s["prod_name"], value="Yethu Product #1")
 
 c1, c2 = st.columns(2)
 with c1:
@@ -76,21 +99,15 @@ with c2:
     pkg = st.number_input(s["pkg_cost"], min_value=0.0, value=50.0)
     margin = st.number_input(s["margin"], min_value=1, max_value=99, value=30)
 
-# 4. Calculation Logic
+# Math
 total_cost = ing + (pkg * batch)
 cost_per_unit = total_cost / batch
-# Simple, transparent retail price formula
 retail_price = cost_per_unit / (1 - (margin/100))
 profit_per_unit = retail_price - cost_per_unit
 
-# 5. Results (Big and Bold)
 st.divider()
-res_col1, res_col2 = st.columns(2)
+res1, res2 = st.columns(2)
+res1.metric(s["result_retail"], f"Rs. {math.ceil(retail_price)}")
+res2.metric(s["result_profit"], f"Rs. {math.floor(profit_per_unit)}")
 
-with res_col1:
-    st.success(f"### {s['result_retail']}\n# Rs. {math.ceil(retail_price)}")
-
-with res_col2:
-    st.info(f"### {s['result_profit']}\n# Rs. {math.floor(profit_per_unit)}")
-
-st.caption("ProfitPath SL - Empowering Local Entrepreneurs")
+st.caption("© 2026 ProfitPath SL | Empowering Local Businesses")
